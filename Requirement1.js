@@ -1,43 +1,116 @@
-var i = [], t = [], c = [], f = {};
+var items = [], transactions = [], categories = [], fields = {};
 
-function doStuff(a, b) {
-    if (["add", "edit", "rmI"].includes(a)) {
-        if (a === "add") {
-            var itm = { n: b[0], cat: b[1], qty: b[2], prc: b[3], unt: b[4], added: new Date(), custF: b[5] || {} };
-            i.push(itm);
-            if (!c.includes(b[1])) c.push(b[1]);
-            t.push({ type: "add", itm });
-        } else if (a === "edit" && i[b[0]]) {
-            t.push({ type: "edit", old: i[b[0]], new: b.slice(1) });
-            i[b[0]] = { ...i[b[0]], n: b[1], cat: b[2], qty: b[3], prc: b[4], unt: b[5], custF: b[6] || {} };
-        } else if (a === "rmI" && i[b[0]]) {
-            t.push({ type: "delete", itm: i[b[0]] });
-            i.splice(b[0], 1);
-        }
-        console.log("=== Dashboard ===\nItems: " + i.length + "\nTotal: $" + i.reduce((tot, x) => tot + x.qty * x.prc, 0).toFixed(2) + "\nCats: " + c.join(', '));
+function chooseFunction(userInput,userObj)
+{
+    switch (userInput,userObj){ 
+        case "add":
+            addItem(userObj);
+            break;
+        case "edit":
+            editItem(userObj);
+            break;
+        case "remove":
+            removeItem(userObj);
+            break;
+        case "sale":
+            saleRestockItem(userObj);
+            break;
+        case "restock":
+            saleRestockItem(userObj);
+            break;
+        case "inventory":
+            Inventory(userobj)
+        default:
+            console.log("choose function");
     }
-    if (["Sale", "rstck"].includes(a)) {
-        for (let k of i) {
-            if (k.n === b[0]) {
-                if (a === "Sale" && k.qty >= b[1]) {
-                    k.qty -= b[1];
-                    t.push({ type: "sale", itm: k, qtyS: b[1], d: new Date() });
-                    console.log(`Sold ${b[1]} ${k.unt} of ${k.n}`);
-                } else if (a === "rstck") {
-                    k.qty += b[1];
-                    t.push({ type: "restock", itm: k, qtyR: b[1], d: new Date() });
-                    console.log(`Restocked ${b[1]} ${k.unt} of ${k.n}`);
+}
+function addItem(input)
+{
+    var item = 
+    { 
+        name: input[0], 
+        category: input[1], 
+        quantity: input[2], 
+        price: input[3], 
+        unit: input[4], 
+        addedAt: new Date(), 
+        customField: input[5] || {} 
+    };
+
+    item.push(item);
+        
+    if (!categories.includes(input[1])) 
+        categories.push(input[1]);
+
+    transactions.push({ type: "add", item });
+}
+
+function editItem(input)
+{
+    if (items[input[0]]) 
+    {
+        transactions.push({ type: "edit", old: items[input[0]], new: input.slice(1) }); //Adding transaction of type edit to the transaction array.
+        items[input[0]] = { ...items[input[0]], name: input[1], category: input[2], quantity: input[3], price: input[4], unit: input[5], customField: input[6] || {} };
+    } 
+}
+
+function removeItem(input)
+{
+    if (items[input[0]]) 
+    {
+        transactions.push({ type: "delete", item: items[input[0]] });//Adding a remove transaction to the transaction array
+        items.splice(input[0], 1);
+    }
+        console.log("=== Dashboard ===\nItems: " + items.length + "\nTotal: $" + items.reduce((tot, x) => tot + x.quantity * x.price, 0).toFixed(2) + "\nCategories: " + categories.join(', '));
+}
+
+function saleRestockItem(input)
+{
+    for (let k of items) {
+        if (k.name === input[0]) {
+            if (k.quantity >= input[1]) 
+                {
+                    k.qty -= input[1];
+                    transactions.push({ type: "sale", item: k, quantitySale: input[1], date: new Date() });//Adding a Sale requirement to the transaction array
+                    console.log(`Sold ${input[1]} ${k.unit} of ${k.name}`);
+                } 
+                else 
+                {
+                    k.quantity += input[1];
+                    transactions.push({ type: "restock", item: k, quantityRestock: input[1], date: new Date() });
+                    console.log(`Restocked ${input[1]} ${k.unit} of ${k.name}`);
                 }
-                break;
             }
-        }
     }
-    if (a === "srch") console.log(i.filter(x => [x.n, x.cat, x.prc].some(v => v.toString().toLowerCase().includes(b[0].toLowerCase()))));
-    if (a === "vwI") console.log("=== Inv ===", i);
-    if (a === "xprtAll") console.log("CSV:\n" + ["Name,Category,Quantity,Price,Unit,AddedAt"].concat(i.map(x => Object.values(x).join(','))).join('\n'));
-    if (a === "vwAllT") console.log("Transactions:\n", t);
-    if (a === "vwIAg") console.log(i.map(x => `${x.n}: ${Math.floor((new Date() - new Date(x.added)) / (1000 * 60 * 60 * 24))}d`).join('\n'));
-    if (a === "Imprt") b[0].forEach(x => doStuff("add", [x.n, x.cat, x.quantity, x.price, x.unit]));
-    if (a === "addFld" && !f[b[0]]) f[b[0]] = null;
-    if (a === "udCFld") i.find(x => x.n === b[0])?.custF[b[1]] = b[2];
+}
+function Inventory(userObj)
+{
+    switch(userObj[0]) {
+        case "search":
+            console.log(items.filter(x => [x.name, x.category, x.price].some(v => v.toString().toLowerCase().includes(userObj[1[0]].toLowerCase()))));
+          break;
+        case "viewInventory":
+            console.log("=== Inv ===", items);
+          break;
+        case "exportAll":
+            console.log("CSV:\n" + ["Name,Category,Quantity,Price,Unit,AddedAt"].concat(items.map(x => Object.values(x).join(','))).join('\n'));
+          break;
+        case "viewAllTransactions":
+            console.log("Transactions:\n", transactions);
+          break;
+        case "viewInventoryAge":
+            console.log(items.map(x => `${x.name}: ${Math.floor((new Date() - new Date(x.added)) / (1000 * 60 * 60 * 24))}d`).join('\n'));
+          break;
+        case "Import":
+           userObj[1[0]].forEach(x => AddItem([x.name, x.category, x.quantity, x.price, x.unit]));
+          break;
+        case "addField":
+            fields[userObj[1[0]]] = null;
+          break;
+        case "udCField":
+            items.find(x => x.name === userObj[1[0]])?.customField[usrObj[1[1]]] = userObj[1[2]];
+          break;
+        default:
+            console.log("Enter valid commands To access inventory");
+      }
 }
